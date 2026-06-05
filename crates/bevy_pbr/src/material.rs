@@ -1024,26 +1024,17 @@ pub(crate) fn specialize_material_meshes(
             let Some(render_visible_mesh_entities) = visible_entities.get::<Mesh3d>() else {
                 continue;
             };
-
-            let mut maybe_specialized_material_pipeline_cache =
-                specialized_material_pipeline_cache.get_mut(&view.retained_view_entity);
-
-            // Remove cached pipeline IDs corresponding to entities that either
-            // have been removed or need to be re-specialized.
-            if let Some(ref mut specialized_material_pipeline_cache) =
-                maybe_specialized_material_pipeline_cache
-            {
-                if dirty_specializations
-                    .must_wipe_specializations_for_view(view.retained_view_entity)
-                {
-                    specialized_material_pipeline_cache.clear();
-                } else {
-                    for &renderable_entity in dirty_specializations.iter_to_despecialize() {
-                        specialized_material_pipeline_cache.remove(&renderable_entity);
-                    }
+            
+            // Caches and removes reneable_entities with dirty_specializations and prevents FPS drop with undropped entities
+            for (_, cache) in specialized_material_pipeline_cache.iter_mut() {
+                for &renderable_entity in dirty_specializations.iter_to_despecialize() {
+                    cache.remove(&renderable_entity);
                 }
             }
-
+            
+            let mut maybe_specialized_material_pipeline_cache =
+                specialized_material_pipeline_cache.get_mut(&view.retained_view_entity);
+        
             // Initialize the pending queues.
             let view_pending_mesh_material_queues =
                 pending_mesh_material_queues.prepare_for_new_frame(view.retained_view_entity);
